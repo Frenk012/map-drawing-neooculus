@@ -29,11 +29,6 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 [[dependencies.${mod_id}]]
-modId = "veil"
-type="required"
-versionRange = "[${veil_version},)"
-ordering = "NONE"
-[[dependencies.${mod_id}]]
 modId = "distant_horizons"
 type="optional"
 versionRange = "[${dh_version},)"

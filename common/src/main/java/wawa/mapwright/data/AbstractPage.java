@@ -67,4 +67,6 @@ public abstract class AbstractPage {
     public void save(final PageIO pageIO, final boolean close) {}
 
     protected void close() {}
+
+    public void release() {}
 }

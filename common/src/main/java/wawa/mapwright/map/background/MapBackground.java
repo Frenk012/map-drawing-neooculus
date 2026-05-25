@@ -1,10 +1,7 @@
 package wawa.mapwright.map.background;
 
-import foundry.veil.api.client.render.VeilRenderSystem;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
-import foundry.veil.api.client.render.shader.program.ShaderProgram;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Vector2dc;
 import wawa.mapwright.MapwrightClient;
@@ -17,6 +14,7 @@ import java.util.Random;
 
 // this whole class is awful and hardcoded to hell and back
 public class MapBackground {
+    public static ShaderInstance BACKGROUND_SHADER = null;
     private static final int[] sizesHorizontal =  new int[]{8, 32, 96};
     private static final int[] sizesVertical =  new int[]{8, 16, 48};
     private static final int minSize = Arrays.stream(sizesHorizontal).min().getAsInt();
@@ -62,56 +60,53 @@ public class MapBackground {
     }
 
     public void render(final GuiGraphics guiGraphics, final int x, final int y, final int width, final int height, final Vector2dc backgroundTranslation, final int blitOffset) {
-        final ShaderProgram backgroundProgram = VeilRenderSystem.setShader(Rendering.Shaders.BACKGROUND);
-        if (backgroundProgram == null) return;
-        backgroundProgram.getUniform("ScreenCenter").setVectorI(x + width / 2, y + height / 2);
-        backgroundProgram.getUniform("Translation").setVector((float) backgroundTranslation.x(), (float) backgroundTranslation.y());
-
-        RenderType sprite = VeilRenderType.get(Rendering.RenderTypes.BACKGROUND, MapwrightClient.id("textures/gui/sprites/background/corner.png"));
-        if (sprite == null) return;
-        Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+        final float transX = (float) backgroundTranslation.x();
+        final float transY = (float) backgroundTranslation.y();
+        final ResourceLocation cornerTex = MapwrightClient.id("textures/gui/sprites/background/corner.png");
+        Rendering.backgroundBlit(guiGraphics, cornerTex,
                 x, y,
                 this.leftMargin, this.topMargin,
                 this.leftMargin + this.rightMargin, this.topMargin + this.bottomMargin,
-                blitOffset, 0, 0
+                blitOffset, 0, 0, BACKGROUND_SHADER, transX, transY
         );
-        Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+        Rendering.backgroundBlit(guiGraphics, cornerTex,
                 x + width - this.rightMargin, y,
                 this.rightMargin, this.topMargin,
                 this.leftMargin + this.rightMargin, this.topMargin + this.bottomMargin,
-                blitOffset, this.leftMargin, 0
+                blitOffset, this.leftMargin, 0, BACKGROUND_SHADER, transX, transY
         );
-        Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+        Rendering.backgroundBlit(guiGraphics, cornerTex,
                 x, y + height - this.bottomMargin,
                 this.leftMargin, this.bottomMargin,
                 this.leftMargin + this.rightMargin, this.topMargin + this.bottomMargin,
-                blitOffset, 0, this.topMargin
+                blitOffset, 0, this.topMargin, BACKGROUND_SHADER, transX, transY
         );
-        Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+        Rendering.backgroundBlit(guiGraphics, cornerTex,
                 x + width - this.rightMargin, y + height - this.bottomMargin,
                 this.rightMargin, this.bottomMargin,
                 this.leftMargin + this.rightMargin, this.topMargin + this.bottomMargin,
-                blitOffset, this.leftMargin, this.topMargin
+                blitOffset, this.leftMargin, this.topMargin, BACKGROUND_SHADER, transX, transY
         );
 
-        sprite = VeilRenderType.get(Rendering.RenderTypes.BACKGROUND, MapwrightClient.id("textures/gui/sprites/background/center.png"));
-        if (sprite == null) return;
-        Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+        final int iw = this.innerWidth(width);
+        final int ih = this.innerHeight(height);
+        // UV must be 0..1 (not 0..iw) to avoid mipmap level overflow on the 1x1 magenta center.png
+        Rendering.backgroundBlit(guiGraphics, MapwrightClient.id("textures/gui/sprites/background/center.png"),
                 x + this.leftMargin, y + this.topMargin,
-                this.innerWidth(width), this.innerHeight(height), 1, 1,
-                blitOffset, 0, 0
+                iw, ih, iw, ih,
+                blitOffset, 0, 0, BACKGROUND_SHADER, transX, transY
         );
 
-        this.topEdge.render(guiGraphics, Rendering.RenderTypes.BACKGROUND,
+        this.topEdge.render(guiGraphics, transX, transY,
                 x + this.leftMargin, y,
                 this.topMargin, blitOffset);
-        this.leftEdge.render(guiGraphics, Rendering.RenderTypes.BACKGROUND,
+        this.leftEdge.render(guiGraphics, transX, transY,
                 x, y + this.topMargin,
                 this.leftMargin, blitOffset);
-        this.rightEdge.render(guiGraphics, Rendering.RenderTypes.BACKGROUND,
+        this.rightEdge.render(guiGraphics, transX, transY,
                 x + width - this.rightMargin, y + this.topMargin,
                 this.rightMargin, blitOffset);
-        this.bottomEdge.render(guiGraphics, Rendering.RenderTypes.BACKGROUND,
+        this.bottomEdge.render(guiGraphics, transX, transY,
                 x + this.rightMargin, y + height - this.bottomMargin,
                 this.bottomMargin, blitOffset);
     }
@@ -163,31 +158,27 @@ public class MapBackground {
             Collections.shuffle(this, random);
         }
 
-        public void render(final GuiGraphics guiGraphics, final ResourceLocation renderType, int x, int y, final int size, final int blitOffset) {
+        public void render(final GuiGraphics guiGraphics, final float transX, final float transY, int x, int y, final int size, final int blitOffset) {
             if (this.edge.horizontal) {
                 for (final EdgeTexture edge : this) {
                     final int width = this.edge.textureSizes[edge.sizeIndex];
-                    final RenderType sprite = VeilRenderType.get(renderType, this.edge.textures[edge.sizeIndex]);
-                    if (sprite == null) continue;
-                    Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+                    Rendering.backgroundBlit(guiGraphics, this.edge.textures[edge.sizeIndex],
                             x, y, width, size,
                             width, size * EdgeTexture.variations,
-                            blitOffset, 0, edge.index * size
+                            blitOffset, 0, edge.index * size,
+                            MapBackground.BACKGROUND_SHADER, transX, transY
                     );
-
                     x += width;
                 }
             } else {
                 for (final EdgeTexture edge : this) {
                     final int height = this.edge.textureSizes[edge.sizeIndex];
-                    final RenderType sprite = VeilRenderType.get(renderType, this.edge.textures[edge.index]);
-                    if (sprite == null) continue;
-                    Rendering.renderTypeBlitUV1(guiGraphics, sprite,
+                    Rendering.backgroundBlit(guiGraphics, this.edge.textures[edge.index],
                             x, y, size, height,
                             size * EdgeTexture.variations, height,
-                            blitOffset, edge.index * size, 0
+                            blitOffset, edge.index * size, 0,
+                            MapBackground.BACKGROUND_SHADER, transX, transY
                     );
-
                     y += height;
                 }
             }

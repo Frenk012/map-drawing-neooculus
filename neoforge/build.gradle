@@ -57,10 +57,6 @@ neoForge {
 }
 
 dependencies {
-    jarJar(implementation("foundry.veil:veil-neoforge-${minecraft_version}:${veil_version}") {
-        exclude group: "maven.modrinth"
-        exclude group: "me.fallenbreath"
-    })
     jarJar(api("dev.ryanhcode.sable-companion:sable-companion-common-${project.minecraft_version}:${project.sable_companion_version_range}")) {
         version {
             prefer project.sable_companion_version
@@ -74,24 +70,3 @@ sourceSets.main.resources {
     srcDir generatedResources.absolutePath
 }
 
-publishMods {
-//    dryRun = true
-    type = STABLE
-    displayName = "[NeoForge] Mapwright $project.version"
-    setChangelog(changelogFile.text)
-
-    file = jar.archiveFile
-    modLoaders.add('neoforge')
-
-    modrinth {
-        accessToken = mapwrightPushTokenModrinth
-        projectId = "iDYmMWwn"
-        minecraftVersions.add(minecraft_version)
-    }
-
-    curseforge {
-        accessToken = mapwrightPushTokenCurse
-        projectId = "1361711"
-        minecraftVersions.add(minecraft_version)
-    }
-}

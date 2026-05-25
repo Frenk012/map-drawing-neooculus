@@ -1,11 +1,9 @@
 package wawa.mapwright.data;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -21,15 +19,15 @@ public class Page extends AbstractPage {
     private boolean uploadDirty = true; // whether the texture needs to reuploaded
     private boolean diskDirty = false; // whether the texture needs to be saved
 
-    public Page(final int rx, final int ry, final DynamicTexture texture) {
+    public Page(final int rx, final int ry, final DynamicTexture texture, final String prefix) {
         super(rx, ry);
         this.texture = texture;
-        this.textureID = MapwrightClient.id("map_" + rx + "_" + ry);
+        this.textureID = MapwrightClient.id(prefix + "_" + rx + "_" + ry);
         Minecraft.getInstance().getTextureManager().register(this.textureID, texture);
     }
 
-    public Page(final int rx, final int ry) {
-        this(rx, ry, new DynamicTexture(MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, false));
+    public Page(final int rx, final int ry, final String prefix) {
+        this(rx, ry, new DynamicTexture(MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, false), prefix);
         this.texture.getPixels().fillRect(0, 0, MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, 0);
     }
 
@@ -66,14 +64,11 @@ public class Page extends AbstractPage {
     @Override
     public void render(final GuiGraphics guiGraphics, final double xOff, final double yOff) {
         super.render(guiGraphics, xOff, yOff);
-        final RenderType renderType = VeilRenderType.get(Rendering.RenderTypes.PALETTE_SWAP, this.textureID);
-        if(renderType == null) return;
-
         if (this.uploadDirty) {
             this.texture.upload();
         }
 
-        Rendering.renderTypeBlit(guiGraphics, renderType,
+        Rendering.simpleTypeBlit(guiGraphics, this.textureID,
                 this.left() + xOff, this.top() + yOff, 0, 0.0f, 0.0f, MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, 1);
     }
 
@@ -106,6 +101,11 @@ public class Page extends AbstractPage {
             }
         }
         return true;
+    }
+
+    @Override
+    public void release() {
+        Minecraft.getInstance().getTextureManager().release(this.textureID);
     }
 
     @Override

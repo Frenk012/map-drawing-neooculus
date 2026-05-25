@@ -26,6 +26,15 @@ public class PageIO {
     public static final String mapName = "mapwright_maps";
     private final Path pagePath;
 
+    public PageIO(final Path directPath) {
+        this.pagePath = directPath;
+        try {
+            Files.createDirectories(this.pagePath);
+        } catch (final IOException e) {
+            MapwrightClient.LOGGER.error("Could not create snapshot directory", e);
+        }
+    }
+
     public PageIO(final Level level, final Minecraft client) {
         this.pagePath = this.buildMapPath(level, client);
         try {

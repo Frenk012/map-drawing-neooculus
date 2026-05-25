@@ -9,14 +9,20 @@ import org.joml.Vector2i;
 import wawa.mapwright.MapwrightClient;
 import wawa.mapwright.data.history.OperationHistory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Handles loading, getting, modifying, and saving {@link AbstractPage} instances
  */
 public class PageManager {
     public PageIO pageIO;
+    public String pageTexturePrefix = "map";
     private final Map<Vector2i, AbstractPage> pages = new HashMap<>();
     private final Map<Pin.Type, Pin> pins = new HashMap<>();
     private final SpyglassPins spyglassPins = new SpyglassPins();
@@ -41,7 +47,7 @@ public class PageManager {
      */
     public AbstractPage getOrCreatePage(final int rx, final int ry) {
         return this.pages.computeIfAbsent(new Vector2i(rx, ry), v -> {
-            final EmptyPage page = new EmptyPage(v.x, v.y, this, this.pageIO);
+            final EmptyPage page = new EmptyPage(v.x, v.y, this, this.pageIO, this.pageTexturePrefix);
             this.deltaCount(page, 1);
             return page;
         });
@@ -296,6 +302,56 @@ public class PageManager {
             }
             this.pageIO.savePins(this.pins);
         }
+    }
+
+    public void saveSnapshot(final Path snapshotDir) {
+        if (this.pageIO == null) return;
+        final Map<Vector2i, AbstractPage> snapshot = new HashMap<>(this.pages);
+        final Path srcDir = this.pageIO.getPagePath();
+        Util.ioPool().execute(() -> {
+            try {
+                Files.createDirectories(snapshotDir);
+                final Set<String> written = new HashSet<>();
+                for (final Map.Entry<Vector2i, AbstractPage> entry : snapshot.entrySet()) {
+                    if (entry.getValue() instanceof final Page p) {
+                        final NativeImage img = p.getImage();
+                        if (img != null) {
+                            final String name = entry.getKey().x + "_" + entry.getKey().y + ".png";
+                            try {
+                                img.writeToFile(snapshotDir.resolve(name));
+                                written.add(name);
+                            } catch (final IOException e) {
+                                MapwrightClient.LOGGER.error("Snapshot write failed for {}", name, e);
+                            }
+                        }
+                    }
+                }
+                if (Files.exists(srcDir)) {
+                    try (final Stream<Path> stream = Files.list(srcDir)) {
+                        stream.filter(p -> p.toString().endsWith(".png"))
+                              .filter(p -> !written.contains(p.getFileName().toString()))
+                              .forEach(src -> {
+                                  try {
+                                      Files.copy(src, snapshotDir.resolve(src.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                                  } catch (final IOException e) {
+                                      MapwrightClient.LOGGER.error("Snapshot copy failed for {}", src, e);
+                                  }
+                              });
+                    }
+                }
+            } catch (final IOException e) {
+                MapwrightClient.LOGGER.error("Failed to create snapshot directory", e);
+            }
+        });
+    }
+
+    public void disposeReadOnly() {
+        for (final AbstractPage page : this.pages.values()) {
+            page.release();
+        }
+        this.pages.clear();
+        this.emptyCount = 0;
+        this.loadedCount = 0;
     }
 
     public void saveAndClear() {

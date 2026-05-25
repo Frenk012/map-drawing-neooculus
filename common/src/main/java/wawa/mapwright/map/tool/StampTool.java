@@ -1,10 +1,8 @@
 package wawa.mapwright.map.tool;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 import org.joml.RoundingMode;
@@ -107,14 +105,9 @@ public class StampTool extends Tool {
 				Minecraft.getInstance().getTextureManager().register(managerLocation, manager);
 			}
 
-			final RenderType renderType = VeilRenderType.get(Rendering.RenderTypes.PALETTE_SWAP, this.textureLoc);
-			if (renderType == null) {
-				return;
-			}
-
 			worldY = worldY + 8;
 
-			Rendering.renderTypeBlit(graphics, renderType, worldX + xOff - (double) (texture.getWidth() / 2), worldY + yOff - (double) (texture.getHeight() / 2), 0, 0f, 0f,
+			Rendering.simpleTypeBlit(graphics, this.textureLoc, worldX + xOff - (double) (texture.getWidth() / 2), worldY + yOff - (double) (texture.getHeight() / 2), 0, 0f, 0f,
 					texture.getWidth(), texture.getHeight(), texture.getWidth(), texture.getHeight(), 1);
 
 			graphics.renderOutline((int) (worldX + xOff - (double) (texture.getWidth() / 2)), (int) (worldY + yOff - (double) (texture.getHeight() / 2)),

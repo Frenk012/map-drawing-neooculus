@@ -15,5 +15,8 @@
   "mapwright.tool.pan": "Deselect Tool",
   "mapwright.tool.pen": "Pen",
   "mapwright.tool.pin": "Pin",
-  "mapwright.tool.stamp": "Stamp Bag"
+  "mapwright.tool.stamp": "Stamp Bag",
+  "item.mapwright.map_snapshot": "Map Snapshot",
+  "mapwright.snapshot.create": "Create Map Snapshot",
+  "mapwright.snapshot.view": "Map Snapshot"
 }

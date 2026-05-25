@@ -45,5 +45,4 @@ plugins {
 
 rootProject.name = 'Mapwright'
 include('common')
-include('fabric')
 include('neoforge')

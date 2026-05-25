@@ -1,10 +1,8 @@
 package wawa.mapwright.map.tool;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -106,13 +104,10 @@ public class DrawTool extends Tool {
 
     @Override
     public void renderWorld(final GuiGraphics graphics, final int worldX, final int worldY, final double xOff, final double yOff) {
-        final RenderType renderType = VeilRenderType.get(Rendering.RenderTypes.PALETTE_SWAP, id);
-        if(renderType == null) return;
-
         final int wh = this.r * 2 + 1;
         final double x = worldX - this.r + xOff;
         final double y = worldY - this.r + yOff;
-        Rendering.renderTypeBlit(graphics, renderType, x, y, 0, 0.0f, 0.0f, wh, wh, wh, wh, 1);
+        Rendering.simpleTypeBlit(graphics, id, x, y, 0, 0.0f, 0.0f, wh, wh, wh, wh, 1);
     }
 
     @Override

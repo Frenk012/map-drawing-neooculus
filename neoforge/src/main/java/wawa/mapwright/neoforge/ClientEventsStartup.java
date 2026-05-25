@@ -1,15 +1,22 @@
 package wawa.mapwright.neoforge;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import wawa.mapwright.MapwrightClient;
+import wawa.mapwright.map.background.MapBackground;
 import wawa.mapwright.neoforge.data.LangGen;
 import wawa.mapwright.neoforge.input.NeoKeyMappings;
+
+import java.io.IOException;
 
 @EventBusSubscriber(modid = MapwrightClient.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class ClientEventsStartup {
@@ -23,6 +30,16 @@ public class ClientEventsStartup {
         event.register(NeoKeyMappings.BRUSH.get());
         event.register(NeoKeyMappings.ERASER.get());
         event.register(NeoKeyMappings.SWAP.get());
+    }
+
+    @SubscribeEvent
+    public static void registerShaders(final RegisterShadersEvent event) throws IOException {
+        event.registerShader(
+            new ShaderInstance(event.getResourceProvider(),
+                ResourceLocation.fromNamespaceAndPath(MapwrightClient.MOD_ID, "background"),
+                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP),
+            shader -> MapBackground.BACKGROUND_SHADER = shader
+        );
     }
 
     @SubscribeEvent

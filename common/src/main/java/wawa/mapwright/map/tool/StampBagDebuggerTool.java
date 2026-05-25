@@ -2,10 +2,8 @@ package wawa.mapwright.map.tool;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import wawa.mapwright.MapwrightClient;
@@ -70,12 +68,6 @@ public class StampBagDebuggerTool extends Tool {
                 Minecraft.getInstance().getTextureManager().register(infoAndID.id, infoAndID.info().getTextureManager());
             }
 
-            final RenderType renderType = VeilRenderType.get(Rendering.RenderTypes.PALETTE_SWAP, infoAndID.id);
-            if (renderType == null) {
-                return;
-            }
-
-
             final StampTexture renderable = infoAndID.info.getTextureManager();
             final double x = worldX + xOff - (double) (renderable.getTexture().getWidth() / 2);
             final double y = worldY + yOff - (double) (renderable.getTexture().getHeight() / 2);
@@ -84,7 +76,7 @@ public class StampBagDebuggerTool extends Tool {
             ps.pushPose();
             ps.translate(x, y, 0);
             graphics.blitSprite(backgroundID, -2, -32, Math.max(renderable.getTexture().getWidth() + 4, 98), renderable.getTexture().getHeight() + 34);
-            Rendering.renderTypeBlit(graphics, renderType, 0, 0, 0, 0f, 0f,
+            Rendering.simpleTypeBlit(graphics, infoAndID.id, 0, 0, 0, 0f, 0f,
                     renderable.getTexture().getWidth(), renderable.getTexture().getHeight(), renderable.getTexture().getWidth(), renderable.getTexture().getHeight(), 1);
 
             graphics.drawString(Minecraft.getInstance().font, infoAndID.info.getCustomName(), 0, -4, Color.GREEN.getRGB());

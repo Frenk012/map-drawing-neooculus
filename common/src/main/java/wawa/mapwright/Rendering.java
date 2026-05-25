@@ -3,14 +3,12 @@ package wawa.mapwright;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import foundry.veil.api.client.render.VeilRenderSystem;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
-import foundry.veil.api.client.render.shader.uniform.ShaderUniform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -50,21 +48,78 @@ public class Rendering {
 		Rendering.renderPlayerIcon(guiGraphics, pos.x - 8, pos.y - 8, Minecraft.getInstance().player, alpha);
 	}
 
+	public static void simpleTypeBlit(final GuiGraphics guiGraphics, final ResourceLocation texture, final double x, final double y, final int blitOffset, final float uOffset, final float vOffset, final int uWidth, final int vHeight, final int textureWidth, final int textureHeight, final float alpha) {
+		final float minU = uOffset / textureWidth;
+		final float maxU = (uOffset + uWidth) / (float) textureWidth;
+		final float minV = vOffset / textureHeight;
+		final float maxV = (vOffset + vHeight) / (float) textureHeight;
+		simpleTypeBlit(guiGraphics, texture, x, x + uWidth, y, y + vHeight, blitOffset, minU, maxU, minV, maxV, alpha);
+	}
+
+	public static void simpleTypeBlit(final GuiGraphics guiGraphics, final ResourceLocation texture, final double x1, final double x2, final double y1, final double y2, final int blitOffset, final float minU, final float maxU, final float minV, final float maxV, final float alpha) {
+		RenderSystem.setShaderTexture(0, texture);
+		RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		final Matrix4f matrix4f = guiGraphics.pose().last().pose();
+		final BufferBuilder buf = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+		buf.addVertex(matrix4f, (float)x1, (float)y1, (float)blitOffset).setUv(minU, minV).setColor(1, 1, 1, alpha);
+		buf.addVertex(matrix4f, (float)x1, (float)y2, (float)blitOffset).setUv(minU, maxV).setColor(1, 1, 1, alpha);
+		buf.addVertex(matrix4f, (float)x2, (float)y2, (float)blitOffset).setUv(maxU, maxV).setColor(1, 1, 1, alpha);
+		buf.addVertex(matrix4f, (float)x2, (float)y1, (float)blitOffset).setUv(maxU, minV).setColor(1, 1, 1, alpha);
+		BufferUploader.drawWithShader(buf.buildOrThrow());
+		RenderSystem.disableBlend();
+	}
+
+	public static void simpleTypeBlitUV1(final GuiGraphics guiGraphics, final ResourceLocation texture, final int x, final int y, final int width, final int height, final int textureWidth, final int textureHeight, final int blitOffset, final float u, final float v) {
+		RenderSystem.setShaderTexture(0, texture);
+		RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		final Matrix4f matrix4f = guiGraphics.pose().last().pose();
+		final BufferBuilder buf = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+		buf.addVertex(matrix4f, (float)x, (float)y, (float)blitOffset).setUv(u / textureWidth, v / textureHeight).setColor(1, 1, 1, 1);
+		buf.addVertex(matrix4f, (float)x, (float)(y + height), (float)blitOffset).setUv(u / textureWidth, (v + height) / textureHeight).setColor(1, 1, 1, 1);
+		buf.addVertex(matrix4f, (float)(x + width), (float)(y + height), (float)blitOffset).setUv((u + width) / textureWidth, (v + height) / textureHeight).setColor(1, 1, 1, 1);
+		buf.addVertex(matrix4f, (float)(x + width), (float)y, (float)blitOffset).setUv((u + width) / textureWidth, v / textureHeight).setColor(1, 1, 1, 1);
+		BufferUploader.drawWithShader(buf.buildOrThrow());
+		RenderSystem.disableBlend();
+	}
+
+	public static void backgroundBlit(final GuiGraphics guiGraphics, final ResourceLocation texture,
+									   final int x, final int y, final int width, final int height,
+									   final int textureWidth, final int textureHeight, final int blitOffset,
+									   final float u, final float v,
+									   final ShaderInstance shader, final float transX, final float transY) {
+		if (shader == null) {
+			simpleTypeBlitUV1(guiGraphics, texture, x, y, width, height, textureWidth, textureHeight, blitOffset, u, v);
+			return;
+		}
+		RenderSystem.setShaderTexture(0, texture);
+		RenderSystem.setShaderTexture(1, Textures.BACKGROUND_FULL);
+		RenderSystem.setShader(() -> shader);
+		final var uScreenCenter = shader.getUniform("ScreenCenter");
+		if (uScreenCenter != null) uScreenCenter.set(0f, 0f);
+		final var uTranslation = shader.getUniform("Translation");
+		if (uTranslation != null) uTranslation.set(transX, transY);
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		final Matrix4f matrix4f = guiGraphics.pose().last().pose();
+		final BufferBuilder buf = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+		buf.addVertex(matrix4f, (float) x, (float) y, (float) blitOffset)
+				.setColor(1f, 1f, 1f, 1f).setUv(u / textureWidth, v / textureHeight).setUv2(x, y);
+		buf.addVertex(matrix4f, (float) x, (float) (y + height), (float) blitOffset)
+				.setColor(1f, 1f, 1f, 1f).setUv(u / textureWidth, (v + height) / (float) textureHeight).setUv2(x, y + height);
+		buf.addVertex(matrix4f, (float) (x + width), (float) (y + height), (float) blitOffset)
+				.setColor(1f, 1f, 1f, 1f).setUv((u + width) / (float) textureWidth, (v + height) / (float) textureHeight).setUv2(x + width, y + height);
+		buf.addVertex(matrix4f, (float) (x + width), (float) y, (float) blitOffset)
+				.setColor(1f, 1f, 1f, 1f).setUv((u + width) / (float) textureWidth, v / (float) textureHeight).setUv2(x + width, y);
+		BufferUploader.drawWithShader(buf.buildOrThrow());
+		RenderSystem.disableBlend();
+	}
+
 	public static void renderPlayerIcon(final GuiGraphics graphics, final double x, final double y, final LocalPlayer player, final float alpha) {
-		final ResourceLocation skinTexture = player.getSkin().texture();
-
-		final RenderType renderType = VeilRenderType.get(RenderTypes.UV_REMAP, skinTexture, Textures.HEAD_ICON);
-		if(renderType == null) return;
-		final ShaderUniform xOffset = VeilRenderSystem.setShader(Shaders.UV_REMAP).getUniform("XOffset");
-
-		final float rot = ((player.yRotO + 90) % 360) / 360.0f;
-		final int frame = Math.round(rot * 16);
-
-		xOffset.setFloat(0.0f);
-		Rendering.renderTypeBlit(graphics, renderType, x, y, 0, 0.0f, 16.0f * frame, 16, 16, 16, 256, alpha);
-
-		xOffset.setFloat(0.5f);
-		Rendering.renderTypeBlit(graphics, renderType, x, y, 0, 0.0f, 16.0f * frame, 16, 16, 16, 256, alpha);
+		// cancelled by MapwrightRenderingMixin; no Veil shader available
 	}
 
 	public static NativeImage getPaletteTexture() {
@@ -106,22 +161,22 @@ public class Rendering {
 										 final int textureWidth, final int textureHeight, final int blitOffset,
 										 final float u, final float v) {
 		final Matrix4f matrix4f = guiGraphics.pose().last().pose();
-		final BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR);
+		final BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
 		bufferBuilder.addVertex(matrix4f, (float)x, (float)y, (float)blitOffset)
 				.setUv(u / textureWidth, v / textureHeight)
-				.setUv2(x, y).setColor(-1);
+				.setColor(1, 1, 1, 1);
 
 		bufferBuilder.addVertex(matrix4f, (float)x, (float)y + height, (float)blitOffset)
 				.setUv(u / textureWidth, (v + height) / textureHeight)
-				.setUv2(x, y + height).setColor(-1);
+				.setColor(1, 1, 1, 1);
 
 		bufferBuilder.addVertex(matrix4f, (float)x + width, (float)y + height, (float)blitOffset)
 				.setUv((u + width) / textureWidth, (v + height) / textureHeight)
-				.setUv2(x + width, y + height).setColor(-1);
+				.setColor(1, 1, 1, 1);
 
 		bufferBuilder.addVertex(matrix4f, (float)x + width, (float)y, (float)blitOffset)
 				.setUv((u + width) / textureWidth, v / textureHeight)
-				.setUv2(x + width, y).setColor(-1);
+				.setColor(1, 1, 1, 1);
 
 		renderType.draw(bufferBuilder.buildOrThrow());
 	}

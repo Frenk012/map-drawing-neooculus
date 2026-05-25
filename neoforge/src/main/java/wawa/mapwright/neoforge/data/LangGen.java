@@ -33,6 +33,10 @@ public class LangGen extends LanguageProvider {
         this.add("mapwright.tool.stamp", "Stamp Bag");
 
         this.add("item.mapwright.spyglass.use_tooltip", "Attack while scoped in to place a temporary pin");
+
+        this.add("item.mapwright.map_snapshot", "Map Snapshot");
+        this.add("mapwright.snapshot.create", "Create Map Snapshot");
+        this.add("mapwright.snapshot.view", "Map Snapshot");
     }
 
     private void add(final Lazy<KeyMapping> key, final String value) {

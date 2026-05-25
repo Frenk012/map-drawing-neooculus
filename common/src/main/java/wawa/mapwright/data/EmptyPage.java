@@ -15,6 +15,7 @@ import wawa.mapwright.MapwrightClient;
  */
 public class EmptyPage extends AbstractPage {
     private final PageManager parent;
+    private final String texturePrefix;
     private boolean loading = true;
     private NativeImage loadedImage = null;
 
@@ -22,9 +23,10 @@ public class EmptyPage extends AbstractPage {
     NativeImage undoImage = null;
     NativeImage redoImage = null;
 
-    public EmptyPage(final int rx, final int ry, final PageManager parent, final PageIO pageIO) {
+    public EmptyPage(final int rx, final int ry, final PageManager parent, final PageIO pageIO, final String texturePrefix) {
         super(rx, ry);
         this.parent = parent;
+        this.texturePrefix = texturePrefix;
         this.runPageLoadThread(pageIO);
     }
 
@@ -59,7 +61,7 @@ public class EmptyPage extends AbstractPage {
         if (!this.isLoading()) {
             final DynamicTexture texture = new DynamicTexture(MapwrightClient.CHUNK_SIZE, MapwrightClient.CHUNK_SIZE, false);
             texture.getPixels().copyFrom(replacement);
-            this.parent.replacePage(this.rx, this.ry, new Page(this.rx, this.ry, texture)); //I think this is right?
+            this.parent.replacePage(this.rx, this.ry, new Page(this.rx, this.ry, texture, this.texturePrefix)); //I think this is right?
 
             this.attemptedUndo = false;
             replacement.close();
@@ -81,7 +83,7 @@ public class EmptyPage extends AbstractPage {
     public void render(final GuiGraphics guiGraphics, final double xOff, final double yOff) {
         super.render(guiGraphics, xOff, yOff);
         if (this.loadedImage != null) {
-            this.parent.replacePage(this.rx, this.ry, new Page(this.rx, this.ry, new DynamicTexture(this.loadedImage)));
+            this.parent.replacePage(this.rx, this.ry, new Page(this.rx, this.ry, new DynamicTexture(this.loadedImage), this.texturePrefix));
         }
     }
 

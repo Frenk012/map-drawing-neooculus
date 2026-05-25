@@ -22,6 +22,7 @@ import wawa.mapwright.map.tool.PanTool;
 import wawa.mapwright.map.widgets.CompassWidget;
 import wawa.mapwright.map.widgets.DebugTextRenderable;
 import wawa.mapwright.map.widgets.MapWidget;
+import wawa.mapwright.map.widgets.SnapshotButtonWidget;
 import wawa.mapwright.map.widgets.ToolPickerWidget;
 import wawa.mapwright.platform.MapWrightServices;
 import wawa.mapwright.platform.services.IKeyMappings;
@@ -67,6 +68,10 @@ public class MapScreen extends Screen {
         this.stampBag = new StampBagWidget(toolX, this.toolPicker.finalToolY + 20, this);
         this.allWidgets.add(this.stampBag);
         this.addRenderableWidget(this.stampBag);
+
+        final SnapshotButtonWidget snapshotBtn = new SnapshotButtonWidget(toolX, this.toolPicker.finalToolY + 44);
+        this.allWidgets.add(snapshotBtn);
+        this.addRenderableWidget(snapshotBtn);
 
         this.compassWidget = new CompassWidget(this.width - 110, this.height - 110);
         this.addRenderableOnly(this.compassWidget);

@@ -1,7 +1,6 @@
 package wawa.mapwright.map.widgets;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import foundry.veil.api.client.color.Color;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -31,15 +30,16 @@ public class ColorPickerWidget extends AbstractWidget {
         final int colorCount = Math.min(COLOR_COUNT, texture.getWidth());
         for (int i = 0; i < colorCount; i++) {
             final float n = (float) (i+1) / (COLOR_COUNT + 1);
-            final Color color = new Color(n, n, n);
+            final int gray = (int)(n * 255);
+            final int colorArgb = 0xFF000000 | (gray << 16) | (gray << 8) | gray;
             final int pixelRGBA = texture.getPixelRGBA(i+1, 0);
-            final Color trueColor = new Color(Integer.reverseBytes(pixelRGBA) >> 8);
+            final int trueColorArgb = 0xFF000000 | (Integer.reverseBytes(pixelRGBA) >>> 8 & 0xFFFFFF);
             final int columns = 4;
             final int sx = (i % columns) * 10;
             final int sy = (i / columns) * 10;
             this.width = Math.max(this.width, sx + 8);
             this.height = Math.max(this.height, sy + 8);
-            this.swabs.add(new PaletteSwabWidget(this, sx, sy, color.argb(), trueColor.argb()));
+            this.swabs.add(new PaletteSwabWidget(this, sx, sy, colorArgb, trueColorArgb));
         }
 
         this.defaultX = rightAnchor - this.width - 4;

@@ -2,10 +2,8 @@ package wawa.mapwright.map.stamp_bag.widgets;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
-import foundry.veil.api.client.render.rendertype.VeilRenderType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -73,10 +71,6 @@ public class StampEntryWidget extends AbstractStampScreenWidget {
 
         final PoseStack ps = guiGraphics.pose();
         ps.pushPose();
-        final RenderType renderType = VeilRenderType.get(Rendering.RenderTypes.PALETTE_SWAP, this.id);
-        if (renderType == null) {
-            return;
-        }
 
         ps.pushPose();
         //TODO:center
@@ -85,7 +79,7 @@ public class StampEntryWidget extends AbstractStampScreenWidget {
         final float scale = Math.min(56f / tex.getWidth() / 2f, 56f / tex.getHeight() / 2f);
         ps.scale(scale, scale, 1);
 
-        Rendering.renderTypeBlit(guiGraphics, renderType, 4.1, 4, 0, 0f, 0f,
+        Rendering.simpleTypeBlit(guiGraphics, this.id, 4.1, 4, 0, 0f, 0f,
                 manager.getTexture().getWidth(), manager.getTexture().getHeight(), manager.getTexture().getWidth(), manager.getTexture().getHeight(), 1);
         ps.popPose();
 
@@ -109,7 +103,7 @@ public class StampEntryWidget extends AbstractStampScreenWidget {
             final int tx = mx - tex.getWidth() - 16;
             final int ty = my - tex.getHeight() / 2;
             guiGraphics.blitSprite(StampBagDebuggerTool.backgroundID, tx - 5, ty - 5, tex.getWidth() + 10, tex.getHeight() + 10);
-            Rendering.renderTypeBlit(guiGraphics, renderType, tx, ty, 0, 0f, 0f,
+            Rendering.simpleTypeBlit(guiGraphics, this.id, tx, ty, 0, 0f, 0f,
                     manager.getTexture().getWidth(), manager.getTexture().getHeight(), manager.getTexture().getWidth(), manager.getTexture().getHeight(), 1);
         }
 
