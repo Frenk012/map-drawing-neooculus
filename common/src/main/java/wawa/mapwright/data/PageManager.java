@@ -304,10 +304,14 @@ public class PageManager {
         }
     }
 
-    public void saveSnapshot(final Path snapshotDir) {
+    public void saveSnapshot(final Path snapshotDir, final Runnable onComplete) {
         if (this.pageIO == null) return;
         final Map<Vector2i, AbstractPage> snapshot = new HashMap<>(this.pages);
         final Path srcDir = this.pageIO.getPagePath();
+        MapwrightClient.LOGGER.info("[Snapshot] saving to {} | pages in memory: {} ({} Page, {} EmptyPage)",
+                snapshotDir, snapshot.size(),
+                snapshot.values().stream().filter(p -> p instanceof Page).count(),
+                snapshot.values().stream().filter(p -> p instanceof EmptyPage).count());
         Util.ioPool().execute(() -> {
             try {
                 Files.createDirectories(snapshotDir);
@@ -320,12 +324,14 @@ public class PageManager {
                             try {
                                 img.writeToFile(snapshotDir.resolve(name));
                                 written.add(name);
+                                MapwrightClient.LOGGER.info("[Snapshot] wrote {}", name);
                             } catch (final IOException e) {
                                 MapwrightClient.LOGGER.error("Snapshot write failed for {}", name, e);
                             }
                         }
                     }
                 }
+                MapwrightClient.LOGGER.info("[Snapshot] srcDir={} exists={}", srcDir, Files.exists(srcDir));
                 if (Files.exists(srcDir)) {
                     try (final Stream<Path> stream = Files.list(srcDir)) {
                         stream.filter(p -> p.toString().endsWith(".png"))
@@ -333,15 +339,18 @@ public class PageManager {
                               .forEach(src -> {
                                   try {
                                       Files.copy(src, snapshotDir.resolve(src.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                                      MapwrightClient.LOGGER.info("[Snapshot] copied {}", src.getFileName());
                                   } catch (final IOException e) {
                                       MapwrightClient.LOGGER.error("Snapshot copy failed for {}", src, e);
                                   }
                               });
                     }
                 }
+                MapwrightClient.LOGGER.info("[Snapshot] done, total written={}", written.size());
             } catch (final IOException e) {
                 MapwrightClient.LOGGER.error("Failed to create snapshot directory", e);
             }
+            onComplete.run();
         });
     }
 

@@ -40,10 +40,7 @@ public class SnapshotButtonWidget extends AbstractWidget {
 
     @Override
     public void onClick(final double mouseX, final double mouseY) {
-        final String uuid = wawa.mapwright.data.SnapshotIO.createSnapshot();
-        if (uuid != null) {
-            SNAPSHOT_HANDLER.accept(uuid);
-        }
+        wawa.mapwright.data.SnapshotIO.createSnapshot(SNAPSHOT_HANDLER);
     }
 
     @Override

@@ -22,6 +22,7 @@ public final class MapwrightClient {
 	private static Boolean SABLE_PRESENT = null;
 
 	public static Vector2d targetPanningPosition = new Vector2d();
+	public static Vector2d lastViewedPosition = null;
 
     public static final StampBagHandler STAMP_HANDLER = new StampBagHandler();
 

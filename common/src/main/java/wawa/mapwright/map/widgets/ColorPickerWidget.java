@@ -113,7 +113,7 @@ public class ColorPickerWidget extends AbstractWidget {
             this.relY = y;
             this.color = color;
             this.visualColor = visualColor;
-            this.tool = new PaletteDrawTool(MapwrightClient.id("tool/brush/brush_cursor"), this.getABGR(), this.visualColor, parent.brushWidget);
+            this.tool = new PaletteDrawTool(MapwrightClient.id("tool/brush/brush_cursor"), this.getVisualABGR(), this.visualColor, parent.brushWidget);
         }
 
         @Override
@@ -149,6 +149,14 @@ public class ColorPickerWidget extends AbstractWidget {
             final int G = this.color >> 8 & 0xFF;
             final int R = this.color >> 16 & 0xFF;
             final int A = this.color >> 24 & 0xFF;
+            return A << 24 | B << 16 | G << 8 | R;
+        }
+
+        public int getVisualABGR() {
+            final int B = this.visualColor & 0xFF;
+            final int G = this.visualColor >> 8 & 0xFF;
+            final int R = this.visualColor >> 16 & 0xFF;
+            final int A = this.visualColor >> 24 & 0xFF;
             return A << 24 | B << 16 | G << 8 | R;
         }
 

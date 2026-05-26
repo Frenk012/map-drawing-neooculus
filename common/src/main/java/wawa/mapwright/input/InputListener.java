@@ -56,8 +56,13 @@ public class InputListener {
                 }
             }
 
-	        MapwrightClient.targetPanningPosition.set(playerPosition);
-            minecraft.setScreen(new MapScreen(playerPosition));
+            if (MapwrightClient.lastViewedPosition != null) {
+                MapwrightClient.targetPanningPosition.set(MapwrightClient.lastViewedPosition);
+                minecraft.setScreen(new MapScreen(MapwrightClient.lastViewedPosition));
+            } else {
+                MapwrightClient.targetPanningPosition.set(playerPosition);
+                minecraft.setScreen(new MapScreen(playerPosition));
+            }
         }
     }
 

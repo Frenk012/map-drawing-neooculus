@@ -4,17 +4,17 @@ import wawa.mapwright.MapwrightClient;
 
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class SnapshotIO {
 
-    public static String createSnapshot() {
+    public static void createSnapshot(final Consumer<String> onSaved) {
         final PageManager pm = MapwrightClient.PAGE_MANAGER;
-        if (pm.pageIO == null) return null;
+        if (pm.pageIO == null) return;
 
         final String uuid = UUID.randomUUID().toString();
         final Path snapshotDir = getSnapshotDir(pm, uuid);
-        pm.saveSnapshot(snapshotDir);
-        return uuid;
+        pm.saveSnapshot(snapshotDir, () -> onSaved.accept(uuid));
     }
 
     public static Path getSnapshotDir(final String uuid) {

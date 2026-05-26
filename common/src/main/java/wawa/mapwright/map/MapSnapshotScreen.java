@@ -11,8 +11,11 @@ import wawa.mapwright.data.PageIO;
 import wawa.mapwright.data.PageManager;
 import wawa.mapwright.map.background.MapBackground;
 
+import java.io.IOException;
 import java.lang.Math;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 public class MapSnapshotScreen extends Screen {
 
@@ -36,6 +39,9 @@ public class MapSnapshotScreen extends Screen {
     private int zoomNum = 0;
     private float zoom = 1f;
 
+    private double panMinX, panMaxX, panMinY, panMaxY;
+    private boolean hasBounds = false;
+
     private boolean dragging = false;
     private double lastMouseX, lastMouseY;
 
@@ -56,6 +62,58 @@ public class MapSnapshotScreen extends Screen {
         this.widgetH = this.background.getTrueHeight() + TOP_MARGIN  + BOTTOM_MARGIN;
         this.widgetX = (this.width  - this.widgetW) / 2;
         this.widgetY = (this.height - this.widgetH) / 2;
+        this.autoFitToContent();
+    }
+
+    private void autoFitToContent() {
+        if (this.snapshotManager.pageIO == null) return;
+        final Path dir = this.snapshotManager.pageIO.getPagePath();
+        if (!Files.exists(dir)) return;
+
+        int minRx = Integer.MAX_VALUE, maxRx = Integer.MIN_VALUE;
+        int minRy = Integer.MAX_VALUE, maxRy = Integer.MIN_VALUE;
+        boolean found = false;
+
+        try (final Stream<Path> stream = Files.list(dir)) {
+            final java.util.List<Path> files = stream.toList();
+            for (final Path file : files) {
+                final String name = file.getFileName().toString();
+                if (!name.endsWith(".png")) continue;
+                final String base = name.substring(0, name.length() - 4);
+                final int sep = base.lastIndexOf('_');
+                if (sep <= 0) continue;
+                try {
+                    final int rx = Integer.parseInt(base.substring(0, sep));
+                    final int ry = Integer.parseInt(base.substring(sep + 1));
+                    if (rx < minRx) minRx = rx;
+                    if (rx > maxRx) maxRx = rx;
+                    if (ry < minRy) minRy = ry;
+                    if (ry > maxRy) maxRy = ry;
+                    found = true;
+                } catch (final NumberFormatException ignored) {}
+            }
+        } catch (final IOException ignored) {}
+
+        if (!found) return;
+
+        final double centerX = (minRx + maxRx + 1) * MapwrightClient.CHUNK_SIZE / 2.0;
+        final double centerY = (minRy + maxRy + 1) * MapwrightClient.CHUNK_SIZE / 2.0;
+        this.panning.set(centerX, centerY);
+
+        final int drawnW = (maxRx - minRx + 1) * MapwrightClient.CHUNK_SIZE;
+        final int drawnH = (maxRy - minRy + 1) * MapwrightClient.CHUNK_SIZE;
+        final int viewW = this.widgetW - LEFT_SCISSOR - RIGHT_SCISSOR;
+        final int viewH = this.widgetH - TOP_SCISSOR - BOTTOM_SCISSOR;
+        final float fitScale = Math.min((float) viewW / drawnW, (float) viewH / drawnH);
+        this.zoomNum = Mth.clamp((int) Math.round(Math.log(fitScale) / Math.log(2)), -2, 3);
+        this.zoom = (float) Math.pow(2, this.zoomNum);
+
+        final double padding = MapwrightClient.CHUNK_SIZE;
+        this.panMinX = minRx * MapwrightClient.CHUNK_SIZE - padding;
+        this.panMaxX = (maxRx + 1) * MapwrightClient.CHUNK_SIZE + padding;
+        this.panMinY = minRy * MapwrightClient.CHUNK_SIZE - padding;
+        this.panMaxY = (maxRy + 1) * MapwrightClient.CHUNK_SIZE + padding;
+        this.hasBounds = true;
     }
 
     @Override
@@ -127,6 +185,10 @@ public class MapSnapshotScreen extends Screen {
             final double dx = (mouseX - this.lastMouseX) / this.zoom;
             final double dy = (mouseY - this.lastMouseY) / this.zoom;
             this.panning.sub(dx, dy);
+            if (this.hasBounds) {
+                this.panning.x = Mth.clamp(this.panning.x, this.panMinX, this.panMaxX);
+                this.panning.y = Mth.clamp(this.panning.y, this.panMinY, this.panMaxY);
+            }
             this.backgroundPanning.sub(deltaX, deltaY);
             this.lastMouseX = mouseX;
             this.lastMouseY = mouseY;

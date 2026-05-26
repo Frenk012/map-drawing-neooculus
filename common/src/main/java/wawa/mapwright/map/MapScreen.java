@@ -184,6 +184,7 @@ public class MapScreen extends Screen {
     @Override
     public void onClose() {
         super.onClose();
+        MapwrightClient.lastViewedPosition = this.lerpedPanning.get();
         this.minecraft.level.playLocalSound(Minecraft.getInstance().player, SoundEvents.BOOK_PUT, SoundSource.MASTER, 1f, 0.5f);
         StampBagScreen.INSTANCE.changeStage(StampBagScreen.ScreenState.IDLE);
         this.stampScreen.parentClose();
